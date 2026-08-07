@@ -8,14 +8,16 @@ initializeApp();
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+function geminiUrl(): string {
+  const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
 
 async function callGemini(
   apiKey: string,
   parts: Array<Record<string, unknown>>,
 ): Promise<string> {
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+  const res = await fetch(`${geminiUrl()}?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -81,7 +83,7 @@ export const parseStatsUpload = onCall(
 
     const text = await callGemini(geminiApiKey.value(), [
       {
-        text: `Extract body composition stats from this report. Return ONLY JSON with keys: age, heightCm, weightKg, goalWeightKg, bodyFatPct, muscleMassKg, visceralFat, bmi, waistCm, hipCm, activityLevel, notes. Use null for unknowns.`,
+        text: `Extract body composition stats from this report. Return ONLY JSON with keys: age, heightCm, weightKg, goalWeightKg, bodyFatPct, muscleMassKg, visceralFat, bmi, proteinPct, waterPct, activityLevel, notes. Use null for unknowns.`,
       },
       { inline_data: { mime_type: mime, data: dataBase64 } },
     ]);
@@ -111,7 +113,7 @@ export const generateMonthlyPlan = onCall(
 
     const prompt = `You are FitMomGuide. Create a practical weight + body-fat loss month for an Indian working mom.
 Return ONLY JSON:
-{"summary":string,"weeks":[{"weekNumber":1-4,"focus":string,"dailyMeals":[7 days with breakfast/lunch/dinner/snacks each {name,calories,prepNotes}],"workouts":[{day,dayLabel,title,durationMins,focus,equipment,exercises:[{name,sets?,reps?,durationSec?,restSec?,cue}]}],"grocery":[{name,qty,unit,category,options:[{tier:"best"|"budget"|"cleanest",brand,productLabel,blinkitQuery}]}]}]}
+{"summary":string,"weeks":[{"weekNumber":1-4,"focus":string,"dailyMeals":[7 days with breakfast/lunch/afternoonSnack/eveningSnack/dinner each {name,calories,prepNotes}],"workouts":[{day,dayLabel,title,durationMins,focus,equipment,exercises:[{name,sets?,reps?,durationSec?,restSec?,cue}]}],"grocery":[{name,qty,unit,category,options:[{tier:"best"|"budget"|"cleanest",brand,productLabel,blinkitQuery}]}]}]}
 Rules: home-only workouts matching prefs; 4 progressive weeks; diet/cuisine aware; each grocery item 2-3 brand tiers; no medical claims.
 User context: ${JSON.stringify({ profile, stats })}`;
 

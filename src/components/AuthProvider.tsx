@@ -21,6 +21,7 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { demoStore } from "@/lib/demo-store";
+import { clearStatsDraft } from "@/lib/stats-draft";
 import { upsertUserDoc } from "@/lib/user-data";
 import type { AppUser } from "@/types";
 
@@ -134,12 +135,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (user?.uid) clearStatsDraft(user.uid);
     if (firebaseReady) {
       await signOut(getFirebaseAuth());
     }
     demoStore.clear();
     setUser(null);
-  }, [firebaseReady]);
+  }, [firebaseReady, user]);
 
   const value = useMemo(
     () => ({

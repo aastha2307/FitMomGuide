@@ -22,7 +22,9 @@ export function BlinkitButton({
           setStatus(
             result === "opened"
               ? "Opening Blinkit…"
-              : "Copied search — paste in Blinkit",
+              : result === "copied"
+                ? "Copied search — paste in Blinkit"
+                : "Couldn’t open Blinkit — search manually",
           );
           window.setTimeout(() => setStatus(null), 2500);
         }}

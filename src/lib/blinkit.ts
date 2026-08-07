@@ -3,19 +3,34 @@ export function buildBlinkitSearchUrl(query: string): string {
   return `https://blinkit.com/s/?q=${q}`;
 }
 
-export async function openBlinkitSearch(query: string): Promise<"opened" | "copied"> {
+export async function openBlinkitSearch(
+  query: string,
+): Promise<"opened" | "copied" | "failed"> {
   const url = buildBlinkitSearchUrl(query);
+
   try {
-    const opened = window.open(url, "_blank", "noopener,noreferrer");
-    if (opened) return "opened";
+    // Anchor click is more reliable than window.open + noopener
+    // (noopener makes window.open return null even when the tab opens).
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    return "opened";
   } catch {
-    // fall through to clipboard
+    // fall through
   }
+
   try {
-    await navigator.clipboard.writeText(query);
-    return "copied";
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(query);
+      return "copied";
+    }
   } catch {
-    await navigator.clipboard.writeText(url);
-    return "copied";
+    // fall through
   }
+
+  return "failed";
 }

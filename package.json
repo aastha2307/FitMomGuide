@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "build:functions": "npm --prefix functions run build",
+    "deploy:rules": "npx firebase deploy --only firestore,storage",
+    "deploy:functions": "npm run build:functions && npx firebase deploy --only functions",
+    "deploy:app": "npx firebase deploy --only apphosting",
+    "deploy": "npm run build:functions && npx firebase deploy"
   },
   "dependencies": {
     "firebase": "^12.17.1",

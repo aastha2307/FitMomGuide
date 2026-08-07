@@ -6,9 +6,13 @@ import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
 import { BlinkitButton } from "@/components/BlinkitButton";
+import { MealCard } from "@/components/MealCard";
 import { useAuth } from "@/components/AuthProvider";
 import { getLatestPlan } from "@/lib/user-data";
-import type { GroceryTier, MonthlyPlan, PlanWeek } from "@/types";
+import { listDayMeals, mealHref, defaultPlanDay, todayPlanDay } from "@/lib/meals";
+import { formatEquipmentList } from "@/lib/workout-prefs";
+import { workoutHref } from "@/lib/workouts";
+import type { GroceryTier, MonthlyPlan, PlanWeek, WorkoutSession } from "@/types";
 
 type Tab = "meals" | "workouts" | "grocery";
 
@@ -33,6 +37,7 @@ function WeekInner() {
   const router = useRouter();
   const [plan, setPlan] = useState<MonthlyPlan | null>(null);
   const [tab, setTab] = useState<Tab>("meals");
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -48,6 +53,26 @@ function WeekInner() {
   const week: PlanWeek | undefined = useMemo(
     () => plan?.weeks.find((w) => w.weekNumber === weekNumber),
     [plan, weekNumber],
+  );
+
+  useEffect(() => {
+    if (!week) return;
+    setSelectedDay((prev) => {
+      if (prev != null && week.dailyMeals.some((d) => d.day === prev)) {
+        return prev;
+      }
+      return defaultPlanDay(week);
+    });
+  }, [week]);
+
+  const selectedDayMeals = useMemo(
+    () => week?.dailyMeals.find((d) => d.day === selectedDay),
+    [week, selectedDay],
+  );
+
+  const selectedDayIndex = useMemo(
+    () => week?.dailyMeals.findIndex((d) => d.day === selectedDay) ?? -1,
+    [week, selectedDay],
   );
 
   if (!plan || !week) {
@@ -91,52 +116,96 @@ function WeekInner() {
 
         {tab === "meals" ? (
           <div className="stack">
-            {week.dailyMeals.map((day) => (
-              <article key={day.day} className="panel">
-                <h2 style={{ margin: "0 0 0.75rem", fontSize: "1.15rem" }}>
-                  {day.dayLabel}
-                </h2>
-                <MealLine title="Breakfast" meal={day.breakfast} />
-                <MealLine title="Lunch" meal={day.lunch} />
-                <MealLine title="Dinner" meal={day.dinner} />
-                {day.snacks.map((s, i) => (
-                  <MealLine key={i} title="Snack" meal={s} />
-                ))}
-              </article>
-            ))}
+            {selectedDayMeals && selectedDay != null ? (
+              <>
+                <div className="day-nav" role="group" aria-label="Day selector">
+                  <button
+                    type="button"
+                    className="day-nav-btn"
+                    disabled={selectedDayIndex <= 0}
+                    onClick={() => {
+                      const prev = week.dailyMeals[selectedDayIndex - 1];
+                      if (prev) setSelectedDay(prev.day);
+                    }}
+                  >
+                    ← Previous
+                  </button>
+                  <div className="day-nav-center">
+                    <strong>{selectedDayMeals.dayLabel}</strong>
+                    <span className="hint">
+                      Day {selectedDayMeals.day}
+                      {selectedDay === todayPlanDay() ? " · Today" : ""}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="day-nav-btn"
+                    disabled={
+                      selectedDayIndex < 0 ||
+                      selectedDayIndex >= week.dailyMeals.length - 1
+                    }
+                    onClick={() => {
+                      const next = week.dailyMeals[selectedDayIndex + 1];
+                      if (next) setSelectedDay(next.day);
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
+
+                <div className="day-nav-dots" role="tablist" aria-label="Jump to day">
+                  {week.dailyMeals.map((day) => (
+                    <button
+                      key={day.day}
+                      type="button"
+                      role="tab"
+                      aria-selected={day.day === selectedDay}
+                      className={
+                        day.day === selectedDay
+                          ? "day-dot active"
+                          : day.day === todayPlanDay()
+                            ? "day-dot today"
+                            : "day-dot"
+                      }
+                      onClick={() => setSelectedDay(day.day)}
+                      title={day.dayLabel}
+                    >
+                      {day.dayLabel.slice(0, 1)}
+                    </button>
+                  ))}
+                </div>
+
+                <p className="hint">Tap a meal to open its recipe.</p>
+
+                <section key={selectedDay} className="day-meals-section fade-in">
+                  <div className="meals-grid">
+                    {listDayMeals(selectedDayMeals).map(({ slot, title, meal }) => (
+                      <MealCard
+                        key={slot}
+                        href={mealHref(week.weekNumber, selectedDayMeals.day, slot)}
+                        slot={slot}
+                        title={title}
+                        meal={meal}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </>
+            ) : (
+              <p className="muted">Loading meals…</p>
+            )}
           </div>
         ) : null}
 
         {tab === "workouts" ? (
           <div className="stack">
+            <p className="hint">Tap a workout to open YouTube reference videos.</p>
             {week.workouts.map((w) => (
-              <article key={`${w.day}-${w.title}`} className="panel stack">
-                <div>
-                  <h2 style={{ margin: 0, fontSize: "1.15rem" }}>{w.title}</h2>
-                  <p className="hint">
-                    {w.dayLabel} · {w.durationMins} min · {w.focus} ·{" "}
-                    {w.equipment === "none" ? "no equipment" : "basics OK"}
-                  </p>
-                </div>
-                {w.exercises.map((ex, idx) => (
-                  <div key={idx} className="meal-block">
-                    <strong>{ex.name}</strong>
-                    <p className="hint" style={{ margin: "0.2rem 0" }}>
-                      {[
-                        ex.sets ? `${ex.sets} sets` : null,
-                        ex.reps ? `${ex.reps} reps` : null,
-                        ex.durationSec ? `${ex.durationSec}s` : null,
-                        ex.restSec ? `${ex.restSec}s rest` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <p className="muted" style={{ margin: 0 }}>
-                      {ex.cue}
-                    </p>
-                  </div>
-                ))}
-              </article>
+              <WorkoutLine
+                key={`${w.day}-${w.title}`}
+                href={workoutHref(week.weekNumber, w.day)}
+                workout={w}
+              />
             ))}
           </div>
         ) : null}
@@ -173,24 +242,32 @@ function WeekInner() {
   );
 }
 
-function MealLine({
-  title,
-  meal,
+function WorkoutLine({
+  href,
+  workout,
 }: {
-  title: string;
-  meal: { name: string; calories: number; prepNotes: string };
+  href: string;
+  workout: WorkoutSession;
 }) {
   return (
-    <div className="meal-block">
+    <Link href={href} className="panel meal-link stack">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <strong>
-          {title}: {meal.name}
-        </strong>
-        <span className="hint">{meal.calories} kcal</span>
+        <strong style={{ fontSize: "1.15rem" }}>{workout.title}</strong>
+        <span className="hint">YouTube →</span>
       </div>
-      <p className="muted" style={{ margin: "0.25rem 0 0" }}>
-        {meal.prepNotes}
+      <p className="hint" style={{ margin: 0 }}>
+        {workout.dayLabel} · {workout.durationMins} min · {workout.focus} ·{" "}
+        {formatEquipmentList(
+          Array.isArray(workout.equipment)
+            ? workout.equipment
+            : workout.equipment
+              ? [String(workout.equipment)]
+              : [],
+        )}
       </p>
-    </div>
+      <p className="muted" style={{ margin: 0 }}>
+        {workout.exercises.length} exercises
+      </p>
+    </Link>
   );
 }

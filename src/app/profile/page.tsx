@@ -7,6 +7,10 @@ import { AppShell } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/components/AuthProvider";
 import { getProfile } from "@/lib/user-data";
+import {
+  formatEquipmentList,
+  formatWorkoutStyle,
+} from "@/lib/workout-prefs";
 import type { UserProfile } from "@/types";
 
 export default function ProfilePage() {
@@ -50,8 +54,11 @@ function ProfileInner() {
               <p className="muted" style={{ margin: 0 }}>
                 Workouts: {profile.workoutPrefs.minutesPerSession} min ×{" "}
                 {profile.workoutPrefs.daysPerWeek}/week ·{" "}
-                {profile.workoutPrefs.equipment} ·{" "}
+                {formatWorkoutStyle(profile.workoutPrefs.workoutStyle)} ·{" "}
                 {profile.workoutPrefs.comfortLevel}
+              </p>
+              <p className="muted" style={{ margin: 0 }}>
+                Equipment: {formatEquipmentList(profile.workoutPrefs.equipment)}
               </p>
             </>
           ) : (
@@ -59,11 +66,14 @@ function ProfileInner() {
           )}
         </div>
 
-        <Link href="/onboarding" className="btn btn-secondary">
+        <Link href="/onboarding?edit=1" className="btn btn-secondary">
           Edit preferences
         </Link>
         <Link href="/stats" className="btn btn-secondary">
-          Update stats & regenerate plan
+          Update stats
+        </Link>
+        <Link href="/plan" className="btn btn-secondary">
+          Generate New Plan
         </Link>
         <button
           type="button"

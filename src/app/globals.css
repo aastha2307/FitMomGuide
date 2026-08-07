@@ -221,6 +221,14 @@ a.btn {
   padding: 0.65rem 0.9rem;
 }
 
+.btn-compact {
+  width: auto;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.65rem;
+  white-space: nowrap;
+}
+
 .btn-row {
   display: grid;
   gap: 0.75rem;
@@ -234,6 +242,18 @@ a.btn {
 .field label {
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .field input,
@@ -320,6 +340,373 @@ a.btn {
   border-top: 1px solid var(--line);
 }
 
+.day-meals-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.day-nav {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
+}
+
+.day-nav-center {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  text-align: center;
+}
+
+.day-nav-center strong {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.15rem;
+}
+
+.day-nav-btn {
+  border: 1px solid rgba(31, 77, 58, 0.25);
+  background: transparent;
+  color: var(--brand);
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.day-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.day-nav-dots {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+}
+
+.day-dot {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 0.45rem 0;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.day-dot.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #f4faf7;
+}
+
+.day-dot.today:not(.active) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.day-meals-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.15rem;
+}
+
+.day-meals-header h2 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.2rem;
+}
+
+.day-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(31, 77, 58, 0.1);
+  color: var(--brand);
+}
+
+.meals-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.meal-card {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 0.85rem;
+  padding: 0.75rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(20, 36, 28, 0.05);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  overflow: hidden;
+}
+
+.meal-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(20, 36, 28, 0.08);
+}
+
+.meal-card-media {
+  position: relative;
+  width: 96px;
+  min-height: 96px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-deep);
+}
+
+.meal-card-img {
+  object-fit: cover;
+}
+
+.meal-card-body {
+  display: grid;
+  gap: 0.3rem;
+  align-content: center;
+  min-width: 0;
+}
+
+.meal-slot-badge {
+  width: fit-content;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(31, 77, 58, 0.1);
+  color: var(--brand);
+}
+
+.meal-card-title {
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+
+.meal-card-notes {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.meal-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.meal-card-cta {
+  margin-left: auto;
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.meal-tone-breakfast .meal-slot-badge {
+  background: rgba(196, 92, 38, 0.12);
+  color: #9a4518;
+}
+
+.meal-tone-snack .meal-slot-badge,
+.meal-tone-evening .meal-slot-badge {
+  background: rgba(180, 140, 40, 0.14);
+  color: #7a5a12;
+}
+
+.meal-tone-lunch .meal-slot-badge {
+  background: rgba(47, 107, 80, 0.12);
+  color: var(--brand);
+}
+
+.meal-tone-dinner .meal-slot-badge {
+  background: rgba(31, 77, 58, 0.14);
+  color: var(--brand-soft);
+}
+
+.meal-hero {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.meal-hero-media {
+  position: relative;
+  height: 220px;
+  background: var(--bg-deep);
+}
+
+.meal-hero-img {
+  object-fit: cover;
+}
+
+.meal-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(20, 36, 28, 0.05) 0%,
+    rgba(20, 36, 28, 0.72) 100%
+  );
+}
+
+.meal-hero-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1rem 1.1rem 1.15rem;
+  color: #f4faf7;
+}
+
+.meal-hero-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.meal-hero-title {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.55rem;
+  line-height: 1.2;
+}
+
+.meal-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.meal-stat {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(4px);
+}
+
+.recipe-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.recipe-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.recipe-ingredient-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.recipe-ingredient-item {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--line);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.recipe-ingredient-item::before {
+  content: "•";
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.recipe-step-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recipe-step-item {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--line);
+}
+
+.recipe-step-num {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #f4faf7;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.recipe-step-text {
+  margin: 0.25rem 0 0;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.meal-link {
+  display: block;
+  border-radius: 12px;
+  margin: 0 -0.25rem;
+  padding: 0.55rem 0.25rem;
+  transition: background 160ms ease;
+}
+
+.meal-link:hover {
+  background: rgba(31, 77, 58, 0.06);
+}
+
+.recipe-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.45rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
 .tier {
   display: grid;
   gap: 0.35rem;
@@ -352,6 +739,17 @@ a.btn {
 
 .fade-in {
   animation: fadeUp 480ms ease both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeUp {

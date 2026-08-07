@@ -48,6 +48,7 @@ Without Firebase env vars you can use **Continue in demo mode** (localStorage). 
 | `/stats` | Manual fields + upload → confirm → generate |
 | `/plan` | Month overview (4 weeks) |
 | `/plan/week/[n]` | Meals / Workouts / Grocery + Add in Blinkit |
+| `/plan/week/[n]/meal/[day]/[slot]` | Tap-through recipe (ingredients + steps) |
 | `/profile` | Prefs + sign out |
 
 ## PWA
@@ -57,6 +58,44 @@ Without Firebase env vars you can use **Continue in demo mode** (localStorage). 
 - Icons in `public/icons/`
 
 On mobile Chrome/Safari, use **Add to Home Screen** after deploying over HTTPS.
+
+## Deploy to Firebase (App Hosting)
+
+Requires **Blaze** (pay-as-you-go) and Firebase CLI ≥ 14.4.
+
+### 1. One-time setup
+
+```bash
+firebase login --reauth
+firebase init apphosting   # link project, create backend "fitmomguide", region e.g. asia-south1
+cp .firebaserc.example .firebaserc   # or let init create .firebaserc
+```
+
+In Firebase Console: enable **Auth** (Google + Phone), **Firestore**, **Storage**. Add your App Hosting URL to **Authorized domains**.
+
+Fill `.env.local` with `NEXT_PUBLIC_FIREBASE_*`, `GEMINI_API_KEY`, `YOUTUBE_API_KEY`.
+
+### 2. Push secrets (production)
+
+```bash
+chmod +x scripts/set-apphosting-secrets.sh
+./scripts/set-apphosting-secrets.sh
+firebase apphosting:secrets:grantaccess --backend fitmomguide
+firebase functions:secrets:set GEMINI_API_KEY   # for Cloud Functions (optional)
+```
+
+### 3. Deploy
+
+```bash
+npm run deploy              # App Hosting + rules + functions
+# or
+npm run deploy:app          # Next.js app only
+npm run deploy:rules        # Firestore + Storage rules only
+```
+
+Live URL format: `https://fitmomguide--YOUR_PROJECT_ID.REGION.hosted.app`
+
+Optional: connect GitHub in Firebase Console → App Hosting for automatic rollouts on push.
 
 ## Blinkit
 

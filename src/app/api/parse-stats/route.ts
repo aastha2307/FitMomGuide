@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parseStatsFromUpload } from "@/lib/ai/gemini";
+import { isGeminiConfigured, parseStatsFromUpload } from "@/lib/ai/gemini";
 
 export const runtime = "nodejs";
 
@@ -16,12 +16,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const gemini = isGeminiConfigured();
     const stats = await parseStatsFromUpload({
       mimeType: body.mimeType,
       base64: body.base64,
     });
 
-    return NextResponse.json({ stats });
+    return NextResponse.json({ stats, gemini });
   } catch (err) {
     console.error(err);
     return NextResponse.json(

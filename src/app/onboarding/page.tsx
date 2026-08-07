@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/components/AuthProvider";
 import { getProfile, saveProfile } from "@/lib/user-data";
+import {
+  DEFAULT_WORKOUT_PREFS,
+  EQUIPMENT_OPTIONS,
+  WORKOUT_STYLE_OPTIONS,
+  normalizeWorkoutPrefs,
+  toggleEquipment,
+} from "@/lib/workout-prefs";
 import type {
   ComfortLevel,
   DietType,
-  EquipmentLevel,
+  EquipmentItem,
   UserProfile,
   WorkoutPrefs,
 } from "@/types";
@@ -17,36 +24,38 @@ import type {
 const CUISINES = [
   "North Indian",
   "South Indian",
-  "Gujarati",
-  "Bengali",
-  "Maharashtrian",
   "Continental",
   "Mediterranean",
   "Asian",
 ];
 
-const DEFAULT_WORKOUT: WorkoutPrefs = {
-  minutesPerSession: 30,
-  daysPerWeek: 4,
-  equipment: "none",
-  comfortLevel: "beginner",
-  notes: "",
-};
-
 export default function OnboardingPage() {
   return (
     <RequireAuth>
-      <OnboardingInner />
+      <Suspense
+        fallback={
+          <AppShell showNav={false}>
+            <p className="muted">Loading preferences…</p>
+          </AppShell>
+        }
+      >
+        <OnboardingInner />
+      </Suspense>
     </RequireAuth>
   );
 }
 
 function OnboardingInner() {
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get("edit") === "1";
   const { user } = useAuth();
   const router = useRouter();
   const [dietType, setDietType] = useState<DietType>("veg");
   const [cuisines, setCuisines] = useState<string[]>(["North Indian"]);
-  const [workout, setWorkout] = useState<WorkoutPrefs>(DEFAULT_WORKOUT);
+  const [workout, setWorkout] = useState<WorkoutPrefs>(DEFAULT_WORKOUT_PREFS);
+  const [existingProfile, setExistingProfile] = useState<UserProfile | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,24 +63,35 @@ function OnboardingInner() {
     if (!user) return;
     getProfile(user.uid).then((p) => {
       if (!p) return;
-      if (p.onboardingComplete && p.statsComplete) {
-        router.replace("/plan");
-        return;
-      }
-      if (p.onboardingComplete && !p.statsComplete) {
-        router.replace("/stats");
-        return;
+      if (!isEditMode) {
+        if (p.onboardingComplete && p.statsComplete) {
+          router.replace("/plan");
+          return;
+        }
+        if (p.onboardingComplete && !p.statsComplete) {
+          router.replace("/stats");
+          return;
+        }
       }
       setDietType(p.dietType);
-      setCuisines(p.cuisines);
-      setWorkout(p.workoutPrefs);
+      const validCuisines = p.cuisines.filter((c) => CUISINES.includes(c));
+      setCuisines(validCuisines.length ? validCuisines : ["North Indian"]);
+      setWorkout(normalizeWorkoutPrefs(p.workoutPrefs));
+      setExistingProfile(p);
     });
-  }, [user, router]);
+  }, [user, router, isEditMode]);
 
   function toggleCuisine(c: string) {
     setCuisines((prev) =>
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
     );
+  }
+
+  function toggleEquip(item: EquipmentItem) {
+    setWorkout((w) => ({
+      ...w,
+      equipment: toggleEquipment(w.equipment, item),
+    }));
   }
 
   async function onSubmit(e: FormEvent) {
@@ -85,14 +105,17 @@ function OnboardingInner() {
     setError(null);
     try {
       const profile: UserProfile = {
+        ...(isEditMode && existingProfile ? existingProfile : {}),
         dietType,
         cuisines,
         workoutPrefs: workout,
         onboardingComplete: true,
-        statsComplete: false,
+        statsComplete: isEditMode
+          ? (existingProfile?.statsComplete ?? false)
+          : false,
       };
       await saveProfile(user.uid, profile);
-      router.push("/stats");
+      router.push(isEditMode ? "/profile" : "/stats");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save prefs");
     } finally {
@@ -103,10 +126,13 @@ function OnboardingInner() {
   return (
     <AppShell showNav={false}>
       <form className="stack fade-in" onSubmit={onSubmit}>
-        <h1 className="section-title">Your preferences</h1>
+        <h1 className="section-title">
+          {isEditMode ? "Edit preferences" : "Your preferences"}
+        </h1>
         <p className="lead">
-          Diet and home-workout basics so the month plan fits your kitchen and
-          schedule.
+          {isEditMode
+            ? "Update diet and workout settings. Your stats and current plan stay as they are until you generate a new plan."
+            : "Diet and home-workout basics so the month plan fits your kitchen and schedule."}
         </p>
 
         <section className="panel stack">
@@ -149,6 +175,32 @@ function OnboardingInner() {
 
         <section className="panel stack">
           <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Home workouts</h2>
+
+          <div>
+            <h3 style={{ margin: "0 0 0.5rem", fontSize: "1rem" }}>
+              Workout focus
+            </h3>
+            <p className="hint" style={{ marginTop: 0 }}>
+              What should your plan lean toward?
+            </p>
+            <div className="chip-row">
+              {WORKOUT_STYLE_OPTIONS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={
+                    workout.workoutStyle === id ? "chip selected" : "chip"
+                  }
+                  onClick={() =>
+                    setWorkout((w) => ({ ...w, workoutStyle: id }))
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="field">
             <label htmlFor="mins">Minutes per session</label>
             <select
@@ -187,22 +239,31 @@ function OnboardingInner() {
               ))}
             </select>
           </div>
-          <div className="field">
-            <label htmlFor="equip">Equipment</label>
-            <select
-              id="equip"
-              value={workout.equipment}
-              onChange={(e) =>
-                setWorkout((w) => ({
-                  ...w,
-                  equipment: e.target.value as EquipmentLevel,
-                }))
-              }
-            >
-              <option value="none">None (bodyweight)</option>
-              <option value="basics">Basics (mat / bottles / band)</option>
-            </select>
+
+          <div>
+            <h3 style={{ margin: "0 0 0.5rem", fontSize: "1rem" }}>
+              Equipment available
+            </h3>
+            <p className="hint" style={{ marginTop: 0 }}>
+              Select all that you have at home. Leave none selected for
+              bodyweight-only workouts.
+            </p>
+            <div className="chip-row">
+              {EQUIPMENT_OPTIONS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={
+                    workout.equipment.includes(id) ? "chip selected" : "chip"
+                  }
+                  onClick={() => toggleEquip(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
+
           <div className="field">
             <label htmlFor="comfort">Comfort level</label>
             <select
@@ -236,8 +297,17 @@ function OnboardingInner() {
 
         {error ? <p className="error">{error}</p> : null}
         <button type="submit" className="btn btn-primary" disabled={busy}>
-          Continue to stats
+          {isEditMode ? "Save preferences" : "Continue to stats"}
         </button>
+        {isEditMode ? (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => router.push("/profile")}
+          >
+            Cancel
+          </button>
+        ) : null}
       </form>
     </AppShell>
   );

@@ -17,5 +17,21 @@
         "*.local"
       ]
     }
+  ],
+  "apphosting": [
+    {
+      "backendId": "fitmomguide",
+      "rootDir": ".",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions/node_modules",
+        "functions/lib",
+        ".next",
+        ".env*"
+      ]
+    }
   ]
 }

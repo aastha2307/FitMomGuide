@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateMonthlyPlanAi } from "@/lib/ai/gemini";
+import { generateMonthlyPlanAi, isGeminiConfigured } from "@/lib/ai/gemini";
 import type { BodyStats, UserProfile } from "@/types";
 
 export const runtime = "nodejs";
@@ -20,13 +20,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const gemini = isGeminiConfigured();
     const plan = await generateMonthlyPlanAi({
       profile: body.profile,
       stats: body.stats,
       statsId: body.statsId,
     });
 
-    return NextResponse.json({ plan });
+    return NextResponse.json({ plan, gemini });
   } catch (err) {
     console.error(err);
     return NextResponse.json(

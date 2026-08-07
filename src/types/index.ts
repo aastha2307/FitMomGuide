@@ -2,18 +2,26 @@ export type DietType = "veg" | "egg" | "non-veg";
 
 export type ActivityLevel = "sedentary" | "light" | "moderate" | "active";
 
-export type EquipmentLevel = "none" | "basics";
+export type EquipmentItem =
+  | "resistance-band"
+  | "stepper"
+  | "treadmill"
+  | "exercise-cycle"
+  | "flexible-weights";
+
+export type WorkoutStylePreference = "cardio" | "core" | "strength" | "mixed";
 
 export type ComfortLevel = "beginner" | "returning" | "intermediate";
 
 export type GroceryTier = "best" | "budget" | "cleanest";
 
-export type WorkoutFocus = "cardio" | "strength" | "mobility" | "mixed";
+export type WorkoutFocus = "cardio" | "strength" | "mobility" | "mixed" | "core";
 
 export interface WorkoutPrefs {
   minutesPerSession: 15 | 20 | 30 | 45;
   daysPerWeek: 3 | 4 | 5 | 6;
-  equipment: EquipmentLevel;
+  equipment: EquipmentItem[];
+  workoutStyle: WorkoutStylePreference;
   comfortLevel: ComfortLevel;
   notes?: string;
 }
@@ -39,8 +47,8 @@ export interface BodyStats {
   muscleMassKg?: number;
   visceralFat?: number;
   bmi?: number;
-  waistCm?: number;
-  hipCm?: number;
+  proteinPct?: number;
+  waterPct?: number;
   activityLevel?: ActivityLevel;
   source: "manual" | "upload" | "mixed";
   rawExtract?: Record<string, unknown>;
@@ -48,10 +56,20 @@ export interface BodyStats {
   createdAt?: string;
 }
 
+export interface MealRecipe {
+  servings: number;
+  prepMins: number;
+  cookMins: number;
+  ingredients: string[];
+  steps: string[];
+  tips?: string;
+}
+
 export interface MealSlot {
   name: string;
   calories: number;
   prepNotes: string;
+  recipe?: MealRecipe;
 }
 
 export interface DailyMeals {
@@ -59,8 +77,9 @@ export interface DailyMeals {
   dayLabel: string;
   breakfast: MealSlot;
   lunch: MealSlot;
+  afternoonSnack: MealSlot;
+  eveningSnack: MealSlot;
   dinner: MealSlot;
-  snacks: MealSlot[];
 }
 
 export interface Exercise {
@@ -70,6 +89,7 @@ export interface Exercise {
   durationSec?: number;
   restSec?: number;
   cue: string;
+  youtubeQuery?: string;
 }
 
 export interface WorkoutSession {
@@ -78,8 +98,9 @@ export interface WorkoutSession {
   title: string;
   durationMins: number;
   focus: WorkoutFocus;
-  equipment: EquipmentLevel;
+  equipment: string[];
   exercises: Exercise[];
+  youtubeQuery?: string;
 }
 
 export interface GroceryBrandOption {
