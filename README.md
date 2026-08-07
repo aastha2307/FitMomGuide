@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FitMomGuide
 
-## Getting Started
+PWA for working moms: capture body stats (manual + smart-scale upload), then generate a **custom monthly plan** with weekly **meals**, **home workouts**, and **grocery lists** (Best / Budget / Cleanest) that open in **Blinkit**.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + TypeScript + PWA (manifest + service worker)
+- Firebase Auth (Google + Phone OTP), Firestore, Storage
+- Gemini for stats parse + monthly plan generation
+- Next.js API routes for local/dev generation; Cloud Functions in `functions/` for production deploy
+
+## Quick start
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Without Firebase env vars you can use **Continue in demo mode** (localStorage). Without `GEMINI_API_KEY`, plan generation uses a built-in mock month so the UI is fully walkable.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Google / Firebase setup
 
-## Learn More
+1. Create a Firebase project (`FitMomGuide`).
+2. Enable **Authentication** providers: **Google** and **Phone**.
+3. Create a **Web** app and copy config into `.env.local` (`NEXT_PUBLIC_FIREBASE_*`).
+4. Enable **Firestore**, **Storage**, and (optional) **Functions**.
+5. Add authorized domains (`localhost` + your deploy host).
+6. Phone OTP: enable reCAPTCHA; add test phone numbers for development.
+7. Create a Gemini API key in Google AI Studio → set `GEMINI_API_KEY` in `.env.local`.
+8. For production functions:
+   ```bash
+   cd functions && npm install && npm run build
+   firebase functions:secrets:set GEMINI_API_KEY
+   firebase deploy --only functions
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+## App routes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Route | Purpose |
+|-------|---------|
+| `/` | Branded landing |
+| `/sign-in` | Google + phone |
+| `/verify-otp` | Phone OTP |
+| `/onboarding` | Diet, cuisine, workout prefs |
+| `/stats` | Manual fields + upload → confirm → generate |
+| `/plan` | Month overview (4 weeks) |
+| `/plan/week/[n]` | Meals / Workouts / Grocery + Add in Blinkit |
+| `/profile` | Prefs + sign out |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## PWA
 
-## Deploy on Vercel
+- `public/manifest.webmanifest`
+- `public/sw.js` (registered client-side)
+- Icons in `public/icons/`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+On mobile Chrome/Safari, use **Add to Home Screen** after deploying over HTTPS.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Blinkit
+
+Grocery brand options call `https://blinkit.com/s/?q=…`. There is no cart API in MVP — the user finishes add-to-cart inside Blinkit. If the window cannot open, the search query is copied to the clipboard.
