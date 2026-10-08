@@ -150,10 +150,11 @@ export function groupGroceryByCategory(
     list.push(item);
     map.set(cat, list);
   }
-  const ordered = CATEGORY_ORDER.filter((c) => map.has(c)).map((c) => ({
-    category: c,
-    items: map.get(c)!,
-  }));
+  const ordered: Array<{ category: string; items: GroceryItem[] }> =
+    CATEGORY_ORDER.filter((c) => map.has(c)).map((c) => ({
+      category: c,
+      items: map.get(c)!,
+    }));
   for (const [category, categoryItems] of map) {
     if (!CATEGORY_ORDER.includes(category as (typeof CATEGORY_ORDER)[number])) {
       ordered.push({ category, items: categoryItems });
