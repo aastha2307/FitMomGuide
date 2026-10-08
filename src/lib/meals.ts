@@ -1,3 +1,4 @@
+import { buildWeekGroceryList } from "@/lib/grocery";
 import type { DailyMeals, MealSlot, MonthlyPlan, PlanWeek } from "@/types";
 
 export type MealSlotKey =
@@ -64,9 +65,13 @@ function legacyFallbackSnack(name: string, calories: number): MealSlot {
 }
 
 export function normalizePlanWeek(week: PlanWeek): PlanWeek {
-  return {
+  const normalized = {
     ...week,
     dailyMeals: week.dailyMeals.map(normalizeDailyMeals),
+  };
+  return {
+    ...normalized,
+    grocery: buildWeekGroceryList(normalized),
   };
 }
 

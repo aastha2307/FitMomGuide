@@ -9,6 +9,7 @@ import type {
   UserProfile,
   WorkoutSession,
 } from "@/types";
+import { buildWeekGroceryList } from "@/lib/grocery";
 import { formatEquipmentList } from "@/lib/workout-prefs";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -386,22 +387,26 @@ export function buildMockMonthlyPlan(
   statsId: string,
 ): MonthlyPlan {
   const cuisine = profile.cuisines[0] || "Indian";
-  const weeks: PlanWeek[] = [1, 2, 3, 4].map((week) => ({
-    weekNumber: week,
-    focus:
-      week === 1
-        ? "Habit reset · gentle fat-loss base"
-        : week === 2
-          ? "Consistency · protein-forward plates"
-          : week === 3
-            ? "Progressive home strength"
-            : "Lock-in · sustainable deficit",
-    dailyMeals: Array.from({ length: 7 }, (_, d) =>
+  const weeks: PlanWeek[] = [1, 2, 3, 4].map((week) => {
+    const dailyMeals = Array.from({ length: 7 }, (_, d) =>
       mealSet(profile.dietType, cuisine, week, d),
-    ),
-    workouts: workoutsForWeek(week, profile.workoutPrefs),
-    grocery: groceryForWeek(week, profile.dietType),
-  }));
+    );
+    const partial: PlanWeek = {
+      weekNumber: week,
+      focus:
+        week === 1
+          ? "Habit reset · gentle fat-loss base"
+          : week === 2
+            ? "Consistency · protein-forward plates"
+            : week === 3
+              ? "Progressive home strength"
+              : "Lock-in · sustainable deficit",
+      dailyMeals,
+      workouts: workoutsForWeek(week, profile.workoutPrefs),
+      grocery: groceryForWeek(week, profile.dietType),
+    };
+    return { ...partial, grocery: buildWeekGroceryList(partial) };
+  });
 
   const fatNote = stats.bodyFatPct
     ? ` Targeting gradual body-fat reduction from ~${stats.bodyFatPct}%.`

@@ -763,6 +763,13 @@ a.btn {
   }
 }
 
+.grocery-category-title {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.15rem;
+  margin: 0.5rem 0 0;
+  color: var(--brand);
+}
+
 .recaptcha-panel {
   width: 100%;
   display: flex;

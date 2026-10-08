@@ -46,6 +46,7 @@ Rules:
 - Aim for sustainable deficit for weight + body fat % reduction. No medical claims.
 - Meals respect diet type and cuisines; quick prep / leftover friendly.
 - Each day has breakfast, afternoonSnack (mid-morning / pre-lunch), lunch, eveningSnack (before dinner), and dinner — all with detailed home recipes: 8–14 ingredients with quantities, 6–10 clear steps (prep + cook + serve), optional tips, and imageQuery (2–5 words describing the plated dish for a photo search).
+- grocery: a consolidated WEEKLY shopping list for that week (25–45 items) covering ALL ingredients needed for every breakfast, afternoonSnack, lunch, eveningSnack, and dinner across all 7 days. Merge duplicates (one row per staple with total qty for the week). Categories: Produce, Protein, Dairy, Pantry, Spices, Frozen, Other.
 - Each grocery item has 2-3 options with tiers best, budget, cleanest and blinkitQuery search terms for India.
 - Stop-if-pain cues on exercises.`;
 }
