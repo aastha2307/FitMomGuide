@@ -280,23 +280,10 @@ function groceryForWeek(week: number, dietType: UserProfile["dietType"]): Grocer
       category: "Protein",
       options: [
         {
-          tier: "best",
-          brand: dietType === "veg" ? "Amul" : "Licious",
-          productLabel: `${protein} (premium)`,
-          blinkitQuery:
-            dietType === "veg" ? "Amul paneer" : dietType === "egg" ? "farm eggs" : "chicken breast",
-        },
-        {
           tier: "budget",
           brand: "Local / store",
           productLabel: `${protein} value pack`,
           blinkitQuery: protein.toLowerCase(),
-        },
-        {
-          tier: "cleanest",
-          brand: dietType === "veg" ? "Organic" : "Hormone-free",
-          productLabel: `Clean-label ${protein}`,
-          blinkitQuery: `organic ${protein.toLowerCase()}`,
         },
       ],
     },
@@ -307,22 +294,10 @@ function groceryForWeek(week: number, dietType: UserProfile["dietType"]): Grocer
       category: "Pantry",
       options: [
         {
-          tier: "best",
-          brand: "Quaker",
-          productLabel: "Rolled oats",
-          blinkitQuery: "Quaker oats",
-        },
-        {
           tier: "budget",
           brand: "Saffola",
           productLabel: "Oats",
           blinkitQuery: "Saffola oats",
-        },
-        {
-          tier: "cleanest",
-          brand: "Yoga Bar",
-          productLabel: "Wholegrain oats",
-          blinkitQuery: "Yoga Bar oats",
         },
       ],
     },
@@ -333,22 +308,10 @@ function groceryForWeek(week: number, dietType: UserProfile["dietType"]): Grocer
       category: "Produce",
       options: [
         {
-          tier: "best",
-          brand: "Fresh",
-          productLabel: "Farm veggies pack",
-          blinkitQuery: "fresh vegetables",
-        },
-        {
           tier: "budget",
           brand: "Local",
           productLabel: "Seasonal veggies",
           blinkitQuery: "vegetables",
-        },
-        {
-          tier: "cleanest",
-          brand: "Organic",
-          productLabel: "Organic veggies",
-          blinkitQuery: "organic vegetables",
         },
       ],
     },
@@ -359,22 +322,10 @@ function groceryForWeek(week: number, dietType: UserProfile["dietType"]): Grocer
       category: "Dairy",
       options: [
         {
-          tier: "best",
-          brand: "Epigamia",
-          productLabel: "Greek yogurt",
-          blinkitQuery: "Epigamia greek yogurt",
-        },
-        {
           tier: "budget",
           brand: "Mother Dairy",
           productLabel: "Curd",
           blinkitQuery: "Mother Dairy curd",
-        },
-        {
-          tier: "cleanest",
-          brand: "Two Brothers",
-          productLabel: "A2 curd",
-          blinkitQuery: "A2 curd",
         },
       ],
     },

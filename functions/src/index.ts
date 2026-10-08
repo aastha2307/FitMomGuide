@@ -114,7 +114,7 @@ export const generateMonthlyPlan = onCall(
     const prompt = `You are FitMomGuide. Create a practical weight + body-fat loss month for an Indian working mom.
 Return ONLY JSON:
 {"summary":string,"weeks":[{"weekNumber":1-4,"focus":string,"dailyMeals":[7 days with breakfast/lunch/afternoonSnack/eveningSnack/dinner each {name,calories,prepNotes}],"workouts":[{day,dayLabel,title,durationMins,focus,equipment,exercises:[{name,sets?,reps?,durationSec?,restSec?,cue}]}],"grocery":[{name,qty,unit,category,options:[{tier:"best"|"budget"|"cleanest",brand,productLabel,blinkitQuery}]}]}]}
-Rules: home-only workouts matching prefs; 4 progressive weeks; diet/cuisine aware; each grocery item 2-3 brand tiers; no medical claims.
+Rules: home-only workouts matching prefs; 4 progressive weeks; diet/cuisine aware; each grocery item one budget-tier Blinkit option; no medical claims.
 User context: ${JSON.stringify({ profile, stats })}`;
 
     const text = await callGemini(geminiApiKey.value(), [{ text: prompt }]);

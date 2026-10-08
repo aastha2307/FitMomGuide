@@ -11,6 +11,145 @@ const CATEGORY_ORDER = [
   "Other",
 ] as const;
 
+type CanonicalRule = {
+  key: string;
+  label: string;
+  pattern: RegExp;
+};
+
+/** Map recipe wording variants to one shopping-list ingredient. */
+const CANONICAL_RULES: CanonicalRule[] = [
+  {
+    key: "eggs",
+    label: "Eggs",
+    pattern:
+      /\b(eggs?|egg whites?|boiled eggs?|hard[\s-]?boiled eggs?|beaten eggs?)\b/i,
+  },
+  {
+    key: "onion",
+    label: "Onion",
+    pattern: /\b(onions?|red onion|spring onion|shallots?)\b/i,
+  },
+  {
+    key: "tomato",
+    label: "Tomato",
+    pattern: /\b(tomatoes?|cherry tomatoes?)\b/i,
+  },
+  {
+    key: "garlic",
+    label: "Garlic",
+    pattern: /\b(garlic|garlic cloves?|minced garlic)\b/i,
+  },
+  {
+    key: "ginger",
+    label: "Ginger",
+    pattern: /\b(ginger|ginger paste|grated ginger)\b/i,
+  },
+  {
+    key: "potato",
+    label: "Potato",
+    pattern: /\b(potatoes?|baby potatoes?)\b/i,
+  },
+  {
+    key: "rice",
+    label: "Rice",
+    pattern: /\b(rice|cooked rice|basmati|brown rice|millets?)\b/i,
+  },
+  {
+    key: "oats",
+    label: "Oats",
+    pattern: /\b(oats?|rolled oats?|oatmeal)\b/i,
+  },
+  {
+    key: "paneer",
+    label: "Paneer",
+    pattern: /\b(paneer|cottage cheese)\b/i,
+  },
+  {
+    key: "chicken",
+    label: "Chicken",
+    pattern: /\b(chicken|chicken breast|boneless chicken)\b/i,
+  },
+  {
+    key: "curd",
+    label: "Curd / yogurt",
+    pattern: /\b(curd|yogurt|yoghurt|dahi|greek yogurt)\b/i,
+  },
+  {
+    key: "milk",
+    label: "Milk",
+    pattern: /\b(milk|skim milk|toned milk)\b/i,
+  },
+  {
+    key: "oil",
+    label: "Cooking oil",
+    pattern: /\b(oil|cooking oil|olive oil|mustard oil|vegetable oil|ghee)\b/i,
+  },
+  {
+    key: "salt",
+    label: "Salt",
+    pattern: /\b(salt|sea salt|rock salt)\b/i,
+  },
+  {
+    key: "coriander",
+    label: "Coriander",
+    pattern: /\b(coriander|cilantro|coriander leaves?|fresh coriander)\b/i,
+  },
+  {
+    key: "lemon",
+    label: "Lemon",
+    pattern: /\b(lemon|lime|lemon juice)\b/i,
+  },
+  {
+    key: "spinach",
+    label: "Spinach",
+    pattern: /\b(spinach|palak)\b/i,
+  },
+  {
+    key: "dal",
+    label: "Dal / lentils",
+    pattern: /\b(dal|lentils?|toor dal|moong dal|masoor dal)\b/i,
+  },
+  {
+    key: "chickpea",
+    label: "Chickpeas",
+    pattern: /\b(chickpeas?|chana|kabuli chana)\b/i,
+  },
+  {
+    key: "tofu",
+    label: "Tofu",
+    pattern: /\b(tofu|soya paneer)\b/i,
+  },
+  {
+    key: "banana",
+    label: "Banana",
+    pattern: /\b(bananas?)\b/i,
+  },
+  {
+    key: "apple",
+    label: "Apple",
+    pattern: /\b(apples?)\b/i,
+  },
+  {
+    key: "turmeric",
+    label: "Turmeric",
+    pattern: /\b(turmeric|haldi)\b/i,
+  },
+  {
+    key: "cumin",
+    label: "Cumin",
+    pattern: /\b(cumin|jeera|cumin seeds?)\b/i,
+  },
+  {
+    key: "chilli",
+    label: "Chilli",
+    pattern: /\b(chilli|chili|green chilli|red chilli|mirch)\b/i,
+  },
+];
+
+const PREP_WORDS =
+  /\b(chopped|diced|sliced|minced|grated|fresh|boiled|cooked|raw|beaten|hard[\s-]?boiled|finely|roughly|crushed|ground|whole|large|small|medium|optional|to taste)\b/gi;
+
 function ingredientKey(line: string): string {
   return line
     .toLowerCase()
@@ -20,23 +159,50 @@ function ingredientKey(line: string): string {
     )
     .replace(/\(.*?\)/g, "")
     .replace(/,.*$/, "")
+    .replace(PREP_WORDS, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-function displayName(key: string): string {
-  if (!key) return "Item";
-  return key.charAt(0).toUpperCase() + key.slice(1);
+function canonicalGroceryKey(raw: string): { key: string; label: string } {
+  const normalized = raw.toLowerCase().trim();
+  if (!normalized) return { key: "item", label: "Item" };
+
+  for (const rule of CANONICAL_RULES) {
+    if (rule.pattern.test(normalized)) {
+      return { key: rule.key, label: rule.label };
+    }
+  }
+
+  const words = normalized.split(/\s+/).filter(Boolean);
+  if (words.length > 3) {
+    const tail = words.slice(-2).join(" ");
+    for (const rule of CANONICAL_RULES) {
+      if (rule.pattern.test(tail)) return { key: rule.key, label: rule.label };
+    }
+    const head = words.slice(0, 2).join(" ");
+    for (const rule of CANONICAL_RULES) {
+      if (rule.pattern.test(head)) return { key: rule.key, label: rule.label };
+    }
+  }
+
+  const key = normalized;
+  return { key, label: titleCase(key) };
+}
+
+function titleCase(s: string): string {
+  if (!s) return "Item";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function canonicalFromText(text: string): { key: string; label: string } {
+  return canonicalGroceryKey(ingredientKey(text));
 }
 
 function namesMatch(a: string, b: string): boolean {
-  const ka = ingredientKey(a);
-  const kb = ingredientKey(b);
-  if (!ka || !kb) return false;
-  if (ka === kb) return true;
-  if (ka.length >= 4 && kb.length >= 4) {
-    return ka.includes(kb) || kb.includes(ka);
-  }
-  return false;
+  const ca = canonicalFromText(a);
+  const cb = canonicalFromText(b);
+  return ca.key === cb.key;
 }
 
 function categoryFor(name: string): string {
@@ -70,24 +236,23 @@ function defaultOptions(name: string): GroceryBrandOption[] {
   const q = name.toLowerCase();
   return [
     {
-      tier: "best",
-      brand: "Premium",
-      productLabel: name,
-      blinkitQuery: q,
-    },
-    {
       tier: "budget",
       brand: "Store pick",
       productLabel: name,
       blinkitQuery: q,
     },
-    {
-      tier: "cleanest",
-      brand: "Organic",
-      productLabel: `Organic ${name}`,
-      blinkitQuery: `organic ${q}`,
-    },
   ];
+}
+
+export function budgetGroceryOption(item: GroceryItem): GroceryBrandOption {
+  const pick =
+    item.options.find((o) => o.tier === "budget") ?? item.options[0];
+  if (pick) return { ...pick, tier: "budget" };
+  return defaultOptions(item.name)[0];
+}
+
+function withBudgetOptionOnly(item: GroceryItem): GroceryItem {
+  return { ...item, options: [budgetGroceryOption(item)] };
 }
 
 function sortGrocery(items: GroceryItem[]): GroceryItem[] {
@@ -101,24 +266,50 @@ function sortGrocery(items: GroceryItem[]): GroceryItem[] {
   });
 }
 
+function mergeGroceryItems(items: GroceryItem[]): GroceryItem[] {
+  const map = new Map<string, GroceryItem>();
+
+  for (const item of items) {
+    const { key, label } = canonicalFromText(item.name);
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, {
+        ...item,
+        name: label,
+        category: categoryFor(label),
+        options: defaultOptions(label),
+      });
+      continue;
+    }
+    existing.qty += item.qty;
+    const existingPick = budgetGroceryOption(existing);
+    const itemPick = budgetGroceryOption(item);
+    if (
+      existingPick.blinkitQuery === label.toLowerCase() &&
+      itemPick.blinkitQuery !== label.toLowerCase()
+    ) {
+      existing.options = item.options.length ? item.options : existing.options;
+    }
+  }
+
+  return Array.from(map.values());
+}
+
 /** Full weekly grocery: plan staples + every ingredient from all 7 days of meals. */
 export function buildWeekGroceryList(week: PlanWeek): GroceryItem[] {
   const fromPlan = week.grocery ?? [];
-  const ingredientMap = new Map<string, { count: number; sample: string }>();
+  const ingredientMap = new Map<string, { count: number }>();
 
   for (const day of week.dailyMeals) {
     const normalized = normalizeDailyMeals(day);
     for (const { meal } of listDayMeals(normalized)) {
       const lines = meal.recipe?.ingredients ?? [];
       for (const line of lines) {
-        const key = ingredientKey(line);
-        if (!key || key.length < 2) continue;
+        const { key } = canonicalFromText(line);
+        if (!key || key === "item") continue;
         const prev = ingredientMap.get(key);
-        if (prev) {
-          prev.count += 1;
-        } else {
-          ingredientMap.set(key, { count: 1, sample: line });
-        }
+        if (prev) prev.count += 1;
+        else ingredientMap.set(key, { count: 1 });
       }
     }
   }
@@ -126,18 +317,19 @@ export function buildWeekGroceryList(week: PlanWeek): GroceryItem[] {
   const merged: GroceryItem[] = fromPlan.map((item) => ({ ...item }));
 
   for (const [key, data] of ingredientMap) {
-    if (fromPlan.some((g) => namesMatch(g.name, key))) continue;
+    const label = canonicalGroceryKey(key).label;
+    if (fromPlan.some((g) => namesMatch(g.name, label))) continue;
 
     merged.push({
-      name: displayName(key),
+      name: label,
       qty: data.count,
       unit: data.count === 1 ? "meal" : "meals",
-      category: categoryFor(key),
-      options: defaultOptions(displayName(key)),
+      category: categoryFor(label),
+      options: defaultOptions(label),
     });
   }
 
-  return sortGrocery(merged);
+  return sortGrocery(mergeGroceryItems(merged).map(withBudgetOptionOnly));
 }
 
 export function groupGroceryByCategory(

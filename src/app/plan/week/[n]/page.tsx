@@ -9,19 +9,17 @@ import { BlinkitButton } from "@/components/BlinkitButton";
 import { MealCard } from "@/components/MealCard";
 import { useAuth } from "@/components/AuthProvider";
 import { getLatestPlan } from "@/lib/user-data";
-import { buildWeekGroceryList, groupGroceryByCategory } from "@/lib/grocery";
+import {
+  budgetGroceryOption,
+  buildWeekGroceryList,
+  groupGroceryByCategory,
+} from "@/lib/grocery";
 import { listDayMeals, mealHref, defaultPlanDay, todayPlanDay } from "@/lib/meals";
 import { formatEquipmentList } from "@/lib/workout-prefs";
 import { workoutHref } from "@/lib/workouts";
-import type { GroceryTier, MonthlyPlan, PlanWeek, WorkoutSession } from "@/types";
+import type { MonthlyPlan, PlanWeek, WorkoutSession } from "@/types";
 
 type Tab = "meals" | "workouts" | "grocery";
-
-const TIER_LABEL: Record<GroceryTier, string> = {
-  best: "Best",
-  budget: "Budget",
-  cleanest: "Cleanest",
-};
 
 export default function WeekPlanPage() {
   return (
@@ -225,31 +223,35 @@ function WeekInner() {
           <div className="stack">
             <p className="hint">
               Full week list ({groceryList.length} items) — staples from your plan
-              plus ingredients from each day&apos;s meals. Pick Best, Budget, or
-              Cleanest, then Add in Blinkit.
+              plus ingredients from each day&apos;s meals. One budget pick per
+              item — tap Add in Blinkit to shop.
             </p>
             {groceryGroups.map((group) => (
               <section key={group.category} className="stack">
                 <h2 className="grocery-category-title">{group.category}</h2>
-                {group.items.map((item) => (
-                  <article key={`${group.category}-${item.name}`} className="panel">
-                    <h3 style={{ margin: "0 0 0.25rem", fontSize: "1.1rem" }}>
-                      {item.name}
-                    </h3>
-                    <p className="hint" style={{ marginTop: 0 }}>
-                      {item.qty} {item.unit}
-                    </p>
-                    {item.options.map((opt) => (
-                      <div key={`${item.name}-${opt.tier}`} className="tier">
-                        <span className="tier-label">{TIER_LABEL[opt.tier]}</span>
+                {group.items.map((item) => {
+                  const pick = budgetGroceryOption(item);
+                  return (
+                    <article
+                      key={`${group.category}-${item.name}`}
+                      className="panel"
+                    >
+                      <h3 style={{ margin: "0 0 0.25rem", fontSize: "1.1rem" }}>
+                        {item.name}
+                      </h3>
+                      <p className="hint" style={{ marginTop: 0 }}>
+                        {item.qty} {item.unit}
+                      </p>
+                      <div className="tier">
+                        <span className="tier-label">Budget</span>
                         <strong>
-                          {opt.brand} — {opt.productLabel}
+                          {pick.brand} — {pick.productLabel}
                         </strong>
-                        <BlinkitButton query={opt.blinkitQuery} />
+                        <BlinkitButton query={pick.blinkitQuery} />
                       </div>
-                    ))}
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </section>
             ))}
           </div>
