@@ -68,8 +68,15 @@ function RecipeInner() {
         return;
       }
 
-      if (found.meal.recipe) {
-        setRecipe(found.meal.recipe);
+      const existing = found.meal.recipe;
+      const needsRefresh =
+        existing &&
+        (existing.ingredients.length < 6 ||
+          existing.steps.length < 5 ||
+          !existing.imageUrl);
+
+      if (existing && !needsRefresh) {
+        setRecipe(existing);
         setLoading(false);
         return;
       }
@@ -86,6 +93,7 @@ function RecipeInner() {
             },
             dietType: pref?.dietType,
             cuisines: pref?.cuisines,
+            slot: params.slot,
           }),
         });
         const data = await res.json();
@@ -131,8 +139,11 @@ function RecipeInner() {
               mealLabel={resolved.mealLabel}
               dayLabel={resolved.dayLabel}
               calories={resolved.meal.calories}
-              prepMins={recipe.prepMins + recipe.cookMins}
+              prepMins={recipe.prepMins}
+              cookMins={recipe.cookMins}
               servings={recipe.servings}
+              imageQuery={recipe.imageQuery}
+              imageUrl={recipe.imageUrl}
             />
 
             {resolved.meal.prepNotes ? (

@@ -18,7 +18,7 @@ Return ONLY valid JSON matching this shape:
       "focus": string,
       "dailyMeals": [{
         "day": 1-7, "dayLabel": "Mon"...,
-        "breakfast": {"name","calories","prepNotes","recipe":{"servings","prepMins","cookMins","ingredients":[string],"steps":[string],"tips"?}},
+        "breakfast": {"name","calories","prepNotes","recipe":{"servings","prepMins","cookMins","ingredients":[string],"steps":[string],"tips"?,"imageQuery":string}},
         "lunch": {"name","calories","prepNotes","recipe":{...}},
         "afternoonSnack": {"name","calories","prepNotes","recipe":{...}},
         "eveningSnack": {"name","calories","prepNotes","recipe":{...}},
@@ -45,13 +45,13 @@ Rules:
 - Workouts are HOME-ONLY. Respect workoutPrefs.workoutStyle (cardio, core, strength, or mixed), equipment list, duration, and days-per-week prefs. Progressive weeks 1→4.
 - Aim for sustainable deficit for weight + body fat % reduction. No medical claims.
 - Meals respect diet type and cuisines; quick prep / leftover friendly.
-- Each day has breakfast, afternoonSnack (mid-morning / pre-lunch), lunch, eveningSnack (before dinner), and dinner — all with practical home recipes (ingredients + numbered steps).
+- Each day has breakfast, afternoonSnack (mid-morning / pre-lunch), lunch, eveningSnack (before dinner), and dinner — all with detailed home recipes: 8–14 ingredients with quantities, 6–10 clear steps (prep + cook + serve), optional tips, and imageQuery (2–5 words describing the plated dish for a photo search).
 - Each grocery item has 2-3 options with tiers best, budget, cleanest and blinkitQuery search terms for India.
 - Stop-if-pain cues on exercises.`;
 }
 
 export function recipeSystemPrompt(): string {
-  return `You write quick home recipes for busy Indian working moms.
+  return `You write detailed, practical home recipes for busy Indian working moms.
 Return ONLY valid JSON:
 {
   "servings": number,
@@ -59,9 +59,18 @@ Return ONLY valid JSON:
   "cookMins": number,
   "ingredients": string[],
   "steps": string[],
-  "tips": string
+  "tips": string,
+  "imageQuery": string
 }
-Keep it realistic, under ~30 minutes total when possible, and match the meal name / cuisine / diet type.`;
+
+Requirements:
+- ingredients: 8–14 lines. Each line MUST include quantity + unit + ingredient (e.g. "1 cup cooked brown rice", "1/2 tsp turmeric", "2 tbsp chopped coriander").
+- steps: 6–10 numbered-style sentences covering mise en place, cooking (heat level, timing), seasoning, plating, and storage/reheat if relevant.
+- tips: 1–2 sentences on swaps, batch prep, or kid-friendly tweaks.
+- imageQuery: 2–5 English words describing the finished dish on a plate (e.g. "paneer tikka bowl salad", "vegetable upma breakfast"). No brand names.
+- Respect dietType (veg / egg / non-veg). Match cuisines and the exact meal name.
+- Total time prepMins + cookMins should usually be 20–40 minutes unless the meal name implies a quicker snack.
+- Use Indian home-kitchen measures (tsp, tbsp, cup) and common pantry items.`;
 }
 
 

@@ -63,6 +63,9 @@ export interface MealRecipe {
   ingredients: string[];
   steps: string[];
   tips?: string;
+  /** Short English phrase for food photo search, e.g. "south indian masala dosa" */
+  imageQuery?: string;
+  imageUrl?: string;
 }
 
 export interface MealSlot {

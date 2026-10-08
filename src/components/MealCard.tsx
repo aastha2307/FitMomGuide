@@ -15,7 +15,10 @@ export function MealCard({
   title: string;
   meal: MealSlot;
 }) {
-  const imageUrl = mealImageUrl(slot);
+  const imageUrl = mealImageUrl(slot, meal.name, {
+    imageQuery: meal.recipe?.imageQuery,
+    imageUrl: meal.recipe?.imageUrl,
+  });
   const prepMins = meal.recipe
     ? meal.recipe.prepMins + meal.recipe.cookMins
     : null;

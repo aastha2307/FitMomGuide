@@ -1,24 +1,32 @@
 {
+  "id": "/",
   "name": "FitMomGuide",
   "short_name": "FitMomGuide",
   "description": "Custom monthly meals, home workouts, and Blinkit-ready groceries for working moms.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#EAF3EE",
   "theme_color": "#1F4D3A",
   "orientation": "portrait-primary",
   "icons": [
     {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

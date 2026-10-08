@@ -6,7 +6,8 @@ import type {
   UserProfile,
 } from "@/types";
 import { buildMockMonthlyPlan } from "@/lib/mock-plan";
-import { normalizeMonthlyPlan } from "@/lib/meals";
+import { normalizeMonthlyPlan, type MealSlotKey } from "@/lib/meals";
+import { findMealImageUrl } from "@/lib/meal-image-search";
 import {
   monthlyPlanSystemPrompt,
   monthlyPlanUserPrompt,
@@ -37,6 +38,7 @@ function sleep(ms: number) {
 async function callGemini(
   parts: Array<Record<string, unknown>>,
   attempt = 0,
+  generationConfig?: Record<string, unknown>,
 ): Promise<string> {
   const key = getApiKey();
   if (!key) throw new Error("NO_GEMINI_KEY");
@@ -49,6 +51,7 @@ async function callGemini(
       generationConfig: {
         temperature: 0.6,
         responseMimeType: "application/json",
+        ...generationConfig,
       },
     }),
   });
@@ -62,7 +65,7 @@ async function callGemini(
         Math.ceil((retryMatch ? Number(retryMatch[1]) : 5) * 1000),
       );
       await sleep(waitMs);
-      return callGemini(parts, attempt + 1);
+      return callGemini(parts, attempt + 1, generationConfig);
     }
     if (res.status === 429) {
       throw new Error(
@@ -152,44 +155,102 @@ export async function generateMonthlyPlanAi(params: {
   }
 }
 
+function normalizeMealRecipe(raw: MealRecipe, mealName: string): MealRecipe {
+  return {
+    servings: Math.max(1, Number(raw.servings) || 1),
+    prepMins: Math.max(0, Number(raw.prepMins) || 10),
+    cookMins: Math.max(0, Number(raw.cookMins) || 15),
+    ingredients: (raw.ingredients ?? []).map((s) => s.trim()).filter(Boolean),
+    steps: (raw.steps ?? []).map((s) => s.trim()).filter(Boolean),
+    tips: raw.tips?.trim(),
+    imageQuery: raw.imageQuery?.trim() || mealName,
+    imageUrl: raw.imageUrl,
+  };
+}
+
+function isRecipeThin(recipe: MealRecipe): boolean {
+  return recipe.ingredients.length < 6 || recipe.steps.length < 5;
+}
+
+async function attachMealImage(
+  recipe: MealRecipe,
+  mealName: string,
+  slot?: MealSlotKey,
+): Promise<MealRecipe> {
+  const imageUrl = await findMealImageUrl({
+    mealName,
+    slot,
+    imageQuery: recipe.imageQuery,
+  });
+  return { ...recipe, imageUrl };
+}
+
 export async function generateRecipeAi(params: {
   meal: Pick<MealSlot, "name" | "calories" | "prepNotes">;
   dietType?: string;
   cuisines?: string[];
+  slot?: MealSlotKey;
 }): Promise<MealRecipe> {
-  const { meal, dietType, cuisines } = params;
+  const { meal, dietType, cuisines, slot } = params;
   try {
-    const text = await callGemini([
-      {
-        text: `${recipeSystemPrompt()}\n\nMeal: ${JSON.stringify({
-          name: meal.name,
-          calories: meal.calories,
-          prepNotes: meal.prepNotes,
-          dietType: dietType ?? "veg",
-          cuisines: cuisines ?? ["Indian"],
-        })}`,
-      },
-    ]);
-    return extractJson<MealRecipe>(text);
+    const text = await callGemini(
+      [
+        {
+          text: `${recipeSystemPrompt()}\n\nMeal: ${JSON.stringify({
+            name: meal.name,
+            calories: meal.calories,
+            prepNotes: meal.prepNotes,
+            dietType: dietType ?? "veg",
+            cuisines: cuisines ?? ["Indian"],
+          })}`,
+        },
+      ],
+      0,
+      { temperature: 0.55, maxOutputTokens: 8192 },
+    );
+    const parsed = normalizeMealRecipe(extractJson<MealRecipe>(text), meal.name);
+    if (isRecipeThin(parsed)) {
+      throw new Error("Thin recipe from model");
+    }
+    return attachMealImage(parsed, meal.name, slot);
   } catch (err) {
     if (!(err instanceof Error && err.message === "NO_GEMINI_KEY")) {
       console.error("generateRecipeAi failed, using fallback", err);
     }
-    return {
-      servings: 1,
-      prepMins: 10,
-      cookMins: 15,
-      ingredients: [
-        `Ingredients for ${meal.name}`,
-        "Salt and spices to taste",
-        "1 tsp oil (if cooking)",
-      ],
-      steps: [
-        `Prep ingredients for ${meal.name}.`,
-        meal.prepNotes || "Cook using your usual home method.",
-        "Plate and serve warm.",
-      ],
-      tips: "Add GEMINI_API_KEY to .env.local for a fuller AI recipe.",
-    };
+    const fallback = normalizeMealRecipe(
+      {
+        servings: 2,
+        prepMins: 12,
+        cookMins: 18,
+        imageQuery: meal.name,
+        ingredients: [
+          "1 tbsp oil (or ghee)",
+          "1/2 tsp cumin seeds",
+          "1 small onion, finely chopped",
+          "1 tsp ginger-garlic paste",
+          "1/2 tsp turmeric powder",
+          "1/2 tsp red chilli powder (adjust to taste)",
+          "1 tsp coriander powder",
+          "Salt to taste",
+          "2 tbsp fresh coriander, chopped",
+          "Main produce/protein for this dish (see meal name)",
+        ],
+        steps: [
+          "Read through ingredients and prep bowl, knife, and pan before you start.",
+          "Wash and chop vegetables; measure spices into a small bowl.",
+          `Heat oil in a pan on medium. Add cumin; when it splutters, add onion and cook 2–3 minutes until soft.`,
+          "Stir in ginger-garlic paste; cook 30 seconds until fragrant (do not burn).",
+          "Add turmeric, chilli, and coriander with a splash of water; cook 1 minute.",
+          `Add the main ingredients for "${meal.name}"; cook on medium, stirring, until done (about 8–12 minutes).`,
+          "Adjust salt and consistency with 2–4 tbsp water if needed; finish with fresh coriander.",
+          "Rest 2 minutes off heat, then plate and serve as noted in prep notes.",
+        ],
+        tips:
+          meal.prepNotes ||
+          "Double batch grains or protein on Sunday to cut weekday cook time.",
+      },
+      meal.name,
+    );
+    return attachMealImage(fallback, meal.name, slot);
   }
 }

@@ -12,7 +12,6 @@ import {
 import {
   GoogleAuthProvider,
   onAuthStateChanged,
-  RecaptchaVerifier,
   signInWithPhoneNumber,
   signInWithPopup,
   signOut,
@@ -21,6 +20,10 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { demoStore } from "@/lib/demo-store";
+import {
+  clearPhoneRecaptchaVerifier,
+  getPhoneRecaptchaVerifier,
+} from "@/lib/phone-recaptcha";
 import { clearStatsDraft } from "@/lib/stats-draft";
 import { upsertUserDoc } from "@/lib/user-data";
 import type { AppUser } from "@/types";
@@ -98,18 +101,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Configure Firebase to use phone OTP");
       }
       const auth = getFirebaseAuth();
-      const containerId = "recaptcha-container";
-      let el = document.getElementById(containerId);
-      if (!el) {
-        el = document.createElement("div");
-        el.id = containerId;
-        document.body.appendChild(el);
+      const verifier = await getPhoneRecaptchaVerifier(auth);
+      try {
+        const send = signInWithPhoneNumber(auth, phoneE164, verifier);
+        const timeout = new Promise<never>((_, reject) => {
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Sending OTP timed out. Complete the reCAPTCHA check and try again.",
+                ),
+              ),
+            45_000,
+          );
+        });
+        const result = await Promise.race([send, timeout]);
+        setConfirmation(result);
+      } catch (err) {
+        clearPhoneRecaptchaVerifier();
+        throw err;
       }
-      const verifier = new RecaptchaVerifier(auth, containerId, {
-        size: "invisible",
-      });
-      const result = await signInWithPhoneNumber(auth, phoneE164, verifier);
-      setConfirmation(result);
     },
     [firebaseReady],
   );
@@ -119,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!confirmation) throw new Error("Request OTP first");
       await confirmation.confirm(code);
       setConfirmation(null);
+      clearPhoneRecaptchaVerifier();
     },
     [confirmation],
   );
@@ -139,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (firebaseReady) {
       await signOut(getFirebaseAuth());
     }
+    clearPhoneRecaptchaVerifier();
     demoStore.clear();
     setUser(null);
   }, [firebaseReady, user]);

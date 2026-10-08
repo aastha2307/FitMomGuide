@@ -1,9 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { PhoneRecaptcha } from "@/components/PhoneRecaptcha";
+import { formatAuthError, isLocalhostHostname } from "@/lib/auth-errors";
+import { getFirebaseAuth } from "@/lib/firebase";
+import {
+  initPhoneRecaptcha,
+  isPhoneRecaptchaReady,
+  resetPhoneRecaptcha,
+} from "@/lib/phone-recaptcha";
+
+type CaptchaState = "loading" | "ready" | "error";
 
 export default function SignInPage() {
   const {
@@ -16,44 +26,83 @@ export default function SignInPage() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busyGoogle, setBusyGoogle] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [onLocalhost, setOnLocalhost] = useState(false);
+  const [captchaState, setCaptchaState] = useState<CaptchaState>("loading");
+
+  const loadCaptcha = useCallback(async () => {
+    if (!firebaseReady) return;
+    setCaptchaState("loading");
+    try {
+      await initPhoneRecaptcha(getFirebaseAuth());
+      setCaptchaState(isPhoneRecaptchaReady() ? "ready" : "error");
+    } catch {
+      setCaptchaState("error");
+    }
+  }, [firebaseReady]);
+
+  useEffect(() => {
+    setOnLocalhost(isLocalhostHostname());
+  }, []);
+
+  useEffect(() => {
+    void loadCaptcha();
+  }, [loadCaptcha]);
 
   async function onGoogle() {
     setError(null);
-    setBusy(true);
+    setBusyGoogle(true);
     try {
       await signInWithGoogle();
       router.push("/onboarding");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Google sign-in failed");
+      setError(formatAuthError(e));
     } finally {
-      setBusy(false);
+      setBusyGoogle(false);
     }
   }
 
   async function onPhone(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setBusy(true);
+    setSendingOtp(true);
     try {
       const digits = phone.replace(/\D/g, "");
       const e164 = digits.startsWith("91") ? `+${digits}` : `+91${digits}`;
       if (e164.length < 13) throw new Error("Enter a valid 10-digit Indian number");
+      if (captchaState !== "ready") {
+        throw new Error("Complete the reCAPTCHA check below, then try again.");
+      }
       await startPhoneSignIn(e164);
       sessionStorage.setItem("fmg_phone", e164);
       router.push("/verify-otp");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send OTP");
+      setError(formatAuthError(err));
+      if (firebaseReady) {
+        try {
+          await resetPhoneRecaptcha(getFirebaseAuth());
+          setCaptchaState("ready");
+        } catch {
+          setCaptchaState("error");
+        }
+      }
     } finally {
-      setBusy(false);
+      setSendingOtp(false);
     }
   }
 
+  async function onRetryCaptcha() {
+    setError(null);
+    await loadCaptcha();
+  }
+
   async function onDemo() {
-    setBusy(true);
     await continueAsDemo();
     router.push("/onboarding");
   }
+
+  const phoneDisabled = !firebaseReady || sendingOtp || captchaState !== "ready";
 
   return (
     <div className="app-shell" style={{ paddingBottom: "2rem" }}>
@@ -71,7 +120,7 @@ export default function SignInPage() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={busy || !firebaseReady}
+            disabled={busyGoogle || sendingOtp || !firebaseReady}
             onClick={onGoogle}
           >
             Continue with Google
@@ -86,17 +135,50 @@ export default function SignInPage() {
                 placeholder="10-digit mobile"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                disabled={busy || !firebaseReady}
+                disabled={sendingOtp || !firebaseReady}
               />
             </div>
+
+            <PhoneRecaptcha />
+            {captchaState === "loading" ? (
+              <p className="hint recaptcha-status">Loading security check…</p>
+            ) : null}
+            {captchaState === "error" ? (
+              <div className="stack">
+                <p className="error" style={{ margin: 0 }}>
+                  Could not load reCAPTCHA.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact"
+                  onClick={onRetryCaptcha}
+                >
+                  Retry security check
+                </button>
+              </div>
+            ) : null}
+
             <button
               type="submit"
               className="btn btn-secondary"
-              disabled={busy || !firebaseReady}
+              disabled={phoneDisabled}
             >
-              Send OTP
+              {sendingOtp ? "Sending OTP…" : "Send OTP"}
             </button>
+            <p className="hint recaptcha-disclosure">
+              Complete the check above, then tap Send OTP. Protected by reCAPTCHA.
+            </p>
           </form>
+
+          {onLocalhost && firebaseReady ? (
+            <p className="hint">
+              Local tip: open{" "}
+              <a href="http://127.0.0.1:3000/sign-in" className="muted">
+                http://127.0.0.1:3000
+              </a>{" "}
+              for phone OTP if localhost fails (both work after a dev restart).
+            </p>
+          ) : null}
 
           <p className="hint">
             {demoMode
@@ -106,7 +188,7 @@ export default function SignInPage() {
           <button
             type="button"
             className="btn btn-secondary"
-            disabled={busy}
+            disabled={sendingOtp || busyGoogle}
             onClick={onDemo}
           >
             Continue in demo mode
@@ -114,7 +196,6 @@ export default function SignInPage() {
 
           {error ? <p className="error">{error}</p> : null}
         </div>
-        <div id="recaptcha-container" />
       </div>
     </div>
   );

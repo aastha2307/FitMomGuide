@@ -9,7 +9,10 @@ export function MealHero({
   dayLabel,
   calories,
   prepMins,
+  cookMins,
   servings,
+  imageQuery,
+  imageUrl: imageUrlProp,
 }: {
   slot: MealSlotKey;
   mealName: string;
@@ -17,9 +20,15 @@ export function MealHero({
   dayLabel: string;
   calories: number;
   prepMins: number;
+  cookMins?: number;
   servings: number;
+  imageQuery?: string;
+  imageUrl?: string;
 }) {
-  const imageUrl = mealImageUrl(slot);
+  const imageUrl = mealImageUrl(slot, mealName, {
+    imageQuery,
+    imageUrl: imageUrlProp,
+  });
 
   return (
     <section className={`meal-hero ${mealSlotTone(slot)}`}>
@@ -41,7 +50,9 @@ export function MealHero({
         <h1 className="meal-hero-title">{mealName}</h1>
         <div className="meal-stat-row">
           <span className="meal-stat">{calories} kcal</span>
-          <span className="meal-stat">{prepMins} min</span>
+          <span className="meal-stat">
+            {cookMins != null ? `${prepMins} prep · ${cookMins} cook` : `${prepMins} min`}
+          </span>
           <span className="meal-stat">
             {servings} serving{servings === 1 ? "" : "s"}
           </span>
